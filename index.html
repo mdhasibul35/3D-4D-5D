@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>3D vs 4D vs 5D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Layout: header, one shared control bar, three identical panels side by side (stacked on phones),
+   then a comparison table whose columns line up with the panels. Deliberately single dark theme. */
+:root {
+  --void: #06070c;
+  --panel: #0d0f17;
+  --line: #222636;
+  --fg: #e9edf7;
+  --muted: #8d93aa;
+  --ice: #8fe3ff;
+  --x: #8fe3ff; --y: #9d8cff; --z: #7cf0c8; --w: #ff6f9c; --v: #ffc46b;
+  --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--void); color: var(--fg); }
+body { font-family: var(--body); font-size: 15px; line-height: 1.55; padding-block: 28px 56px; padding-inline: 16px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+
+header { display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: end; justify-content: space-between; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ice); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(38px, 5vw, 60px); line-height: 1; margin: 6px 0 0; text-wrap: balance; }
+h1 em { font-style: italic; }
+h1 .d3 { color: var(--z); } h1 .d4 { color: var(--w); } h1 .d5 { color: var(--v); }
+.lede { color: var(--muted); margin: 0; max-width: 52ch; }
+
+.bar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 24px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+}
+.ctl { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ctl .k { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.ctl .k b { font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type="range"] { width: 100%; accent-color: var(--ice); min-width: 0; }
+button {
+  font: 600 13px/1 var(--body); border-radius: 999px; padding: 9px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--fg); transition: border-color .15s, background .15s;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+button[aria-pressed="true"] { background: rgba(143,227,255,.12); border-color: var(--ice); color: var(--ice); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 12px var(--mono); color: var(--muted); align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+
+.panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 820px) { .panels { grid-template-columns: minmax(0, 1fr); } }
+.p { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.p .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.p h2 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0; line-height: 1.1; }
+.p .dim { font: 500 12px var(--mono); letter-spacing: .1em; padding: 3px 8px; border-radius: 5px; }
+.p canvas { width: 100%; aspect-ratio: 1; height: auto; display: block; background: #04050a; border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: grab; }
+.p canvas:active { cursor: grabbing; }
+.p .made { font-size: 14px; color: var(--muted); margin: 0; }
+.p .made strong { color: var(--fg); font-weight: 600; }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th, td { padding: 11px 16px; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--panel); }
+tbody td { font: 500 15px var(--mono); }
+tbody td:first-child { font: 400 15px var(--body); color: var(--fg); }
+tbody td .f { display: block; font: 400 11px var(--mono); color: var(--muted); }
+tbody tr:last-child td { border-bottom: 0; }
+td.n3 { color: var(--z); } td.n4 { color: var(--w); } td.n5 { color: var(--v); }
+td.na { color: #3a3f55; }
+.note { font-size: 14px; color: var(--muted); margin: 0; max-width: 75ch; }
+.note b { color: var(--fg); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Interactive comparison Â· hypercubes</div>
+      <h1><em class="d3">3D</em> vs <em class="d4">4D</em> vs <em class="d5">5D</em></h1>
+    </div>
+    <p class="lede">The same shape, a cube, built in three, four and five dimensions. All three panels share one camera and one set of controls, so any difference you see comes from the extra dimensions.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="Shared controls">
+    <div class="ctl">
+      <span class="k">Build the newest dimension <b id="buildV">100%</b></span>
+      <input type="range" id="build" min="0" max="1" step="0.01" value="1" aria-label="Extrude each shape along its newest axis">
+    </div>
+    <div class="ctl">
+      <span class="k">Spin through newest axis <b id="spinV">0.35</b></span>
+      <input type="range" id="spin" min="0" max="1" step="0.01" value="0.35" aria-label="Rotation speed in the plane of X and the newest axis">
+    </div>
+    <div class="ctl">
+      <span class="k">Ordinary 3D turn <b id="turnV">0.15</b></span>
+      <input type="range" id="turn" min="0" max="1" step="0.01" value="0.15" aria-label="Rotation speed in the XZ plane">
+    </div>
+    <div class="ctl">
+      <span class="k">View</span>
+      <div class="row">
+        <button type="button" id="colorBtn" aria-pressed="true">Color by direction</button>
+        <button type="button" id="pauseBtn" aria-pressed="false">Pause</button>
+        <button type="button" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" aria-label="Edge colors by direction">
+    <span>Edge direction:</span>
+    <span class="chip"><i style="background:var(--x)"></i>X</span>
+    <span class="chip"><i style="background:var(--y)"></i>Y</span>
+    <span class="chip"><i style="background:var(--z)"></i>Z (3rd)</span>
+    <span class="chip"><i style="background:var(--w)"></i>W (4th)</span>
+    <span class="chip"><i style="background:var(--v)"></i>V (5th)</span>
+    <span>Â· Drag any panel to turn all three together.</span>
+  </div>
+
+  <div class="panels">
+    <section class="p" data-n="3">
+      <div class="top"><h2>Cube</h2><span class="dim" style="color:var(--z);background:rgba(124,240,200,.1)">3D</span></div>
+      <canvas tabindex="0" aria-label="3D cube, drag to rotate"></canvas>
+      <p class="made">Made of <strong>6 squares</strong>. A square dragged along <strong>Z</strong>.</p>
+    </section>
+    <section class="p" data-n="4">
+      <div class="top"><h2>Tesseract</h2><span class="dim" style="color:var(--w);background:rgba(255,111,156,.1)">4D</span></div>
+      <canvas tabindex="0" aria-label="4D tesseract, drag to rotate"></canvas>
+      <p class="made">Made of <strong>8 cubes</strong>. A cube dragged along <strong>W</strong>.</p>
+    </section>
+    <section class="p" data-n="5">
+      <div class="top"><h2>Penteract</h2><span class="dim" style="color:var(--v);background:rgba(255,196,107,.1)">5D</span></div>
+      <canvas tabindex="0" aria-label="5D penteract, drag to rotate"></canvas>
+      <p class="made">Made of <strong>10 tesseracts</strong>. A tesseract dragged along <strong>V</strong>.</p>
+    </section>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Count</th><th>3D cube</th><th>4D tesseract</th><th>5D penteract</th></tr></thead>
+      <tbody>
+        <tr><td>Corners<span class="f">2â¿</span></td><td class="n3">8</td><td class="n4">16</td><td class="n5">32</td></tr>
+        <tr><td>Edges<span class="f">n Â· 2â¿â»Â¹</span></td><td class="n3">12</td><td class="n4">32</td><td class="n5">80</td></tr>
+        <tr><td>Square faces</td><td class="n3">6</td><td class="n4">24</td><td class="n5">80</td></tr>
+        <tr><td>Cubes</td><td class="n3">1</td><td class="n4">8</td><td class="n5">40</td></tr>
+        <tr><td>Tesseracts</td><td class="na">â€”</td><td class="n4">1</td><td class="n5">10</td></tr>
+        <tr><td>Edges meeting at each corner<span class="f">n</span></td><td class="n3">3</td><td class="n4">4</td><td class="n5">5</td></tr>
+        <tr><td>Rotation planes<span class="f">n(nâˆ’1)/2</span></td><td class="n3">3</td><td class="n4">6</td><td class="n5">10</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note"><b>Try this:</b> drag the build slider to 0. Each shape collapses into the one before it: the cube flattens into a square, the tesseract into a cube, the penteract into a tesseract. Slide it back up and you watch each one get built by dragging a copy along a brand-new direction. That is the whole pattern, and it never stops: every new dimension doubles the corners.</p>
+</div>
+
+<script>
+(() => {
+  const AX = ['#8fe3ff', '#9d8cff', '#7cf0c8', '#ff6f9c', '#ffc46b'];
+  const AXRGB = AX.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const MONO = '"IBM Plex Mono", Menlo, monospace';
+
+  const st = { build: 1, spin: .35, turn: .15, color: true, paused: false };
+
+  function identity(n) { return Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => +(i === j))); }
+  function rot(M, i, j, a) {
+    const c = Math.cos(a), s = Math.sin(a), n = M.length;
+    for (let k = 0; k < n; k++) { const mi = M[i][k], mj = M[j][k]; M[i][k] = c * mi - s * mj; M[j][k] = s * mi + c * mj; }
+  }
+  function ortho(M) {
+    const n = M.length;
+    for (let r = 0; r < n; r++) {
+      for (let q = 0; q < r; q++) { let d = 0; for (let k = 0; k < n; k++) d += M[r][k] * M[q][k]; for (let k = 0; k < n; k++) M[r][k] -= d * M[q][k]; }
+      let l = 0; for (let k = 0; k < n; k++) l += M[r][k] ** 2; l = Math.sqrt(l); for (let k = 0; k < n; k++) M[r][k] /= l;
+    }
+  }
+
+  // ---- build panels ----
+  const panels = [...document.querySelectorAll('.p')].map(sec => {
+    const n = +sec.dataset.n, cv = sec.querySelector('canvas'), ctx = cv.getContext('2d');
+    const V = []; for (let i = 0; i < 2 ** n; i++) V.push(Array.from({ length: n }, (_, k) => (i >> k & 1 ? .5 : -.5)));
+    const E = []; for (let i = 0; i < V.length; i++) for (let k = 0; k < n; k++) { const j = i ^ (1 << k); if (j > i) E.push([i, j, k]); }
+    return { n, cv, ctx, V, E, Mx: identity(n), fit: 0 };
+  });
+
+  // shared 3D camera pose (applied on top of each panel's own higher-dimensional spin)
+  let C = identity(3);
+  function resetPose() {
+    C = identity(3); rot(C, 0, 2, .55); rot(C, 1, 2, -.42);
+    panels.forEach(p => { p.Mx = identity(p.n); });
+  }
+  resetPose();
+
+  function sizeCanvases() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    panels.forEach(p => {
+      const w = Math.round(p.cv.clientWidth * dpr);
+      if (w && p.cv.width !== w) { p.cv.width = p.cv.height = w; }
+    });
+  }
+  new ResizeObserver(sizeCanvases).observe(document.querySelector('.panels'));
+  sizeCanvases();
+
+  // project an n-D point down to 3D by successive perspective divides from the top dimension
+  function project(p, n) {
+    const q = p.slice();
+    for (let d = n - 1; d >= 3; d--) {
+      const k = 1 / (2.4 - q[d]);
+      for (let i = 0; i < d; i++) q[i] *= k * 1.6;
+    }
+    return q;
+  }
+
+  function drawPanel(p, time) {
+    const { n, cv, ctx, V, E, Mx } = p, S = cv.width;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#04050a'; ctx.fillRect(0, 0, S, S);
+    const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S * .6);
+    g.addColorStop(0, 'rgba(60,80,140,.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+
+    // vertices: extrude newest axis by build amount, apply n-D spin, project to 3D, apply shared 3D pose
+    const P = V.map(v => {
+      const a = v.slice(); a[n - 1] *= st.build;
+      const r = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) r[i] += Mx[i][k] * a[k];
+      const q = project(r, n);
+      const x = C[0][0] * q[0] + C[0][1] * q[1] + C[0][2] * q[2];
+      const y = C[1][0] * q[0] + C[1][1] * q[1] + C[1][2] * q[2];
+      const z = C[2][0] * q[0] + C[2][1] * q[1] + C[2][2] * q[2];
+      const kz = 1 / (3.6 - z);
+      return { x: x * kz, y: y * kz, z };
+    });
+    // auto-fit so every panel uses the same share of its frame
+    let R = 0; P.forEach(q => { R = Math.max(R, Math.hypot(q.x, q.y)); });
+    const target = (S * .36) / Math.max(R, 1e-3);
+    p.fit = p.fit ? p.fit + (target - p.fit) * .08 : target;
+    let zMin = Infinity, zMax = -Infinity; P.forEach(q => { zMin = Math.min(zMin, q.z); zMax = Math.max(zMax, q.z); });
+    const zr = Math.max(1e-6, zMax - zMin);
+    const sx = q => S / 2 + q.x * p.fit, sy = q => S / 2 + q.y * p.fit;
+
+    const lw = S / 600;
+    const edges = E.map(([a, b, k]) => ({ a: P[a], b: P[b], k, z: (P[a].z + P[b].z) / 2 })).sort((u, v) => u.z - v.z);
+    ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (const e of edges) {
+      const near = (e.z - zMin) / zr;
+      const c = st.color ? AXRGB[e.k] : AXRGB[0];
+      ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${.06 + .1 * near})`;
+      ctx.lineWidth = (8 + 10 * near) * lw;
+      ctx.beginPath(); ctx.moveTo(sx(e.a), sy(e.a)); ctx.lineTo(sx(e.b), sy(e.b)); ctx.stroke();
+      ctx.strokeStyle = `rgba(${c[0]},${c[1]},${c[2]},${.4 + .55 * near})`;
+      ctx.lineWidth = (1.6 + 2.4 * near) * lw;
+      ctx.beginPath(); ctx.moveTo(sx(e.a), sy(e.a)); ctx.lineTo(sx(e.b), sy(e.b)); ctx.stroke();
+    }
+    for (const q of P) {
+      const near = (q.z - zMin) / zr;
+      ctx.fillStyle = `rgba(233,237,247,${.45 + .55 * near})`;
+      ctx.beginPath(); ctx.arc(sx(q), sy(q), (2.2 + 3 * near) * lw, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.font = `500 ${Math.round(13 * lw)}px ${MONO}`; ctx.fillStyle = 'rgba(141,147,170,.85)'; ctx.textAlign = 'left';
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${Math.round(1.5 * lw)}px`;
+    ctx.fillText(`${V.length} CORNERS Â· ${E.length} EDGES`, 16 * lw, S - 18 * lw);
+  }
+
+  // ---- interaction: drag on any panel turns the shared 3D pose ----
+  let dragging = null, lx = 0, ly = 0, vx = 0, vy = 0;
+  panels.forEach(p => {
+    p.cv.addEventListener('pointerdown', e => { dragging = e.pointerId; lx = e.clientX; ly = e.clientY; vx = vy = 0; p.cv.setPointerCapture(e.pointerId); });
+    p.cv.addEventListener('pointermove', e => {
+      if (dragging !== e.pointerId) return;
+      const k = 2.4 / p.cv.clientWidth;
+      const dx = (e.clientX - lx) * k, dy = (e.clientY - ly) * k; lx = e.clientX; ly = e.clientY;
+      rot(C, 0, 2, -dx); rot(C, 1, 2, dy); vx = -dx; vy = dy;
+    });
+    const end = () => { dragging = null; };
+    p.cv.addEventListener('pointerup', end); p.cv.addEventListener('pointercancel', end);
+    p.cv.addEventListener('keydown', e => {
+      const m = { ArrowLeft: [.08, 0], ArrowRight: [-.08, 0], ArrowUp: [0, -.08], ArrowDown: [0, .08] }[e.key];
+      if (m) { rot(C, 0, 2, m[0]); rot(C, 1, 2, m[1]); e.preventDefault(); }
+    });
+  });
+
+  // ---- controls ----
+  const bind = (id, key, fmt) => {
+    const el = document.getElementById(id), out = document.getElementById(id + 'V');
+    el.addEventListener('input', () => { st[key] = +el.value; out.textContent = fmt(st[key]); });
+  };
+  bind('build', 'build', v => Math.round(v * 100) + '%');
+  bind('spin', 'spin', v => v.toFixed(2));
+  bind('turn', 'turn', v => v.toFixed(2));
+  const colorBtn = document.getElementById('colorBtn'), pauseBtn = document.getElementById('pauseBtn');
+  colorBtn.addEventListener('click', () => { st.color = !st.color; colorBtn.setAttribute('aria-pressed', String(st.color)); });
+  pauseBtn.addEventListener('click', () => { st.paused = !st.paused; pauseBtn.setAttribute('aria-pressed', String(st.paused)); pauseBtn.textContent = st.paused ? 'Play' : 'Pause'; });
+  document.getElementById('resetBtn').addEventListener('click', resetPose);
+
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { st.paused = true; pauseBtn.setAttribute('aria-pressed', 'true'); pauseBtn.textContent = 'Play'; }
+
+  // ---- loop ----
+  let last = performance.now(), frame = 0;
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (!st.paused) {
+      // each shape spins in the plane of X and its own newest axis: XZ for the cube, XW for the tesseract, XV for the penteract
+      panels.forEach(p => rot(p.Mx, 0, p.n - 1, st.spin * dt * 1.6));
+      // extra higher-dimensional motion so the 5D shape shows its second hidden axis too
+      const p5 = panels[2]; rot(p5.Mx, 1, 3, st.spin * dt * .7);
+      rot(C, 0, 2, st.turn * dt * 1.2);
+    }
+    if (dragging === null && (Math.abs(vx) > 1e-4 || Math.abs(vy) > 1e-4)) { rot(C, 0, 2, vx); rot(C, 1, 2, vy); vx *= .92; vy *= .92; }
+    if (++frame % 120 === 0) { ortho(C); panels.forEach(p => ortho(p.Mx)); }
+    panels.forEach(p => drawPanel(p, now));
+    requestAnimationFrame(loop);
+  }
+  const fonts = document.fonts.load(`500 13px "IBM Plex Mono"`).catch(() => {});
+  Promise.race([fonts, new Promise(r => setTimeout(r, 1500))]).then(() => { last = performance.now(); requestAnimationFrame(loop); });
+})();
+</script>
+
+</body>
+</html>
